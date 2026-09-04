@@ -40,9 +40,10 @@ done <<< "${EXCLUDE_LIST:-}"
 
 is_excluded() {
   local path="$1" top="${1%%/*}" base="${1##*/}"
-  for d in "${EXCLUDE_DIRS[@]:-}"; do [ -n "$d" ] && [ "$top" = "$d" ] && return 0; done
-  for f in "${EXCLUDE_FILES[@]:-}"; do [ -n "$f" ] && { [ "$path" = "$f" ] || [ "$base" = "$f" ]; } && return 0; done
-  for g in "${EXCLUDE_GLOBS[@]:-}"; do [ -n "$g" ] && [[ "$base" == $g ]] && return 0; done
+  local _d _f _g
+  for _d in "${EXCLUDE_DIRS[@]:-}"; do [ -n "$_d" ] && [ "$top" = "$_d" ] && return 0; done
+  for _f in "${EXCLUDE_FILES[@]:-}"; do [ -n "$_f" ] && { [ "$path" = "$_f" ] || [ "$base" = "$_f" ]; } && return 0; done
+  for _g in "${EXCLUDE_GLOBS[@]:-}"; do [ -n "$_g" ] && [[ "$base" == $_g ]] && return 0; done
   return 1
 }
 
@@ -75,8 +76,9 @@ full_deploy() {
   echo "mode=full" >> "$GITHUB_OUTPUT"
 
   RSYNC_EXCLUDES=()
-  for d in "${EXCLUDE_DIRS[@]:-}" "${EXCLUDE_FILES[@]:-}" "${EXCLUDE_GLOBS[@]:-}"; do
-    [ -n "$d" ] && RSYNC_EXCLUDES+=(--exclude "$d")
+  local _e
+  for _e in "${EXCLUDE_DIRS[@]:-}" "${EXCLUDE_FILES[@]:-}" "${EXCLUDE_GLOBS[@]:-}"; do
+    [ -n "$_e" ] && RSYNC_EXCLUDES+=(--exclude "$_e")
   done
 
   STAGE_DIR="$(mktemp -d)"
