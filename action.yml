@@ -68,13 +68,16 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install lftp
+    - name: Install lftp (built with OpenSSL)
+      # Ubuntu's apt package links lftp against GnuTLS, which has known
+      # TLS session-resumption issues on the FTPS data channel against
+      # servers that enforce session reuse (e.g. Pure-FTPd's default
+      # anti-hijacking policy). That surfaces as: control connection and
+      # AUTH TLS succeed, then every subsequent data-connection attempt
+      # times out and reconnects until max-retries is hit. Building from
+      # source against OpenSSL avoids the whole class of bug.
       shell: bash
-      run: |
-        if ! command -v lftp >/dev/null 2>&1; then
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq lftp
-        fi
+      run: "${{ github.action_path }}/install-lftp.sh"
 
     - name: Deploy via lftp
       id: deploy

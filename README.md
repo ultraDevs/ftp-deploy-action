@@ -72,6 +72,14 @@ SSL: no alternative certificate subject name matches target host name 'ftp.examp
 
 your FTP hostname is a CNAME/alias pointing at a server whose TLS certificate was issued for its own hostname, not yours — common on cPanel resharing hosting where `ftp.yourdomain.com` and the box's real hostname resolve to the same IP but only the real hostname is in the cert's SAN list. Set `ssl-verify: false` to accept the connection anyway (this is what most desktop FTP clients do silently when you click through a certificate warning).
 
+## "Connects, then every upload times out and reconnects"
+
+Symptom: the control connection succeeds (you see the server's welcome banner), `AUTH TLS` succeeds, and then every `put` fails with `max-retries exceeded`, with `debug: true` showing repeated `Connecting... / Timeout - reconnecting` cycles and no further protocol detail.
+
+This is a known lftp-on-Linux issue, not something wrong with your credentials or workflow. Ubuntu (and most Debian-based) `apt install lftp` links against **GnuTLS**, which has documented TLS session-resumption problems on the FTPS data channel against servers that enforce control/data session reuse as an anti-hijacking measure — Pure-FTPd does this by default, and it's a very common FTP daemon on shared/reseller (cPanel) hosting. The same command from a machine running an OpenSSL-linked lftp (e.g. Homebrew's build on macOS) works fine with identical credentials, which is the telltale sign.
+
+This action's "Install lftp" step already works around it by building lftp from source against OpenSSL instead of using the distro package, so you shouldn't hit this — but if you're vendoring this logic elsewhere or seeing it despite that, that's where to look.
+
 ## License
 
 MIT
