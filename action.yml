@@ -1,0 +1,93 @@
+name: 'lftp FTP/FTPS Deploy'
+description: 'Deploy a directory to an FTP or FTPS server via lftp, with git-diff-based incremental uploads and verbose, debuggable output.'
+author: 'ultraDevs'
+
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'
+
+inputs:
+  server:
+    description: 'FTP server hostname'
+    required: true
+  username:
+    description: 'FTP username'
+    required: true
+  password:
+    description: 'FTP password'
+    required: true
+  port:
+    description: 'FTP port'
+    required: false
+    default: '21'
+  protocol:
+    description: "Connection protocol: 'ftp' (no encryption) or 'ftps' (explicit TLS)"
+    required: false
+    default: 'ftps'
+  ssl-verify:
+    description: "'true' to validate the server's TLS certificate (hostname + CA), 'false' to skip validation. Set to 'false' if you get a certificate hostname-mismatch error — common on shared cPanel hosting where the FTP hostname is a CNAME/alias and the cert only covers the server's real hostname."
+    required: false
+    default: 'true'
+  local-dir:
+    description: 'Local directory to deploy from, relative to the workflow workspace'
+    required: false
+    default: '.'
+  remote-dir:
+    description: 'Absolute remote directory to deploy to'
+    required: true
+  exclude:
+    description: 'Newline-separated paths/globs to exclude. Entries with no "/" are matched against both top-level directory names and file basenames anywhere in the tree; glob patterns like "*.log" match by basename.'
+    required: false
+    default: |
+      .git
+      .github
+  full-deploy:
+    description: "'true' forces a full mirror (upload everything, delete remote files not present locally) instead of an incremental git-diff deploy. Also used automatically as a fallback on the first run, on non-push events, or when the pre-push commit isn't available locally (see README on fetch-depth)."
+    required: false
+    default: 'false'
+  dry-run:
+    description: "'true' to print what would be uploaded/deleted without connecting or transferring anything"
+    required: false
+    default: 'false'
+
+outputs:
+  mode:
+    description: "Which deploy path ran: 'full' or 'incremental'"
+    value: ${{ steps.deploy.outputs.mode }}
+  uploaded-count:
+    description: 'Number of files uploaded (incremental mode only; empty for full mirror)'
+    value: ${{ steps.deploy.outputs.uploaded-count }}
+  deleted-count:
+    description: 'Number of files deleted (incremental mode only; empty for full mirror)'
+    value: ${{ steps.deploy.outputs.deleted-count }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install lftp
+      shell: bash
+      run: |
+        if ! command -v lftp >/dev/null 2>&1; then
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp
+        fi
+
+    - name: Deploy via lftp
+      id: deploy
+      shell: bash
+      run: "${{ github.action_path }}/deploy.sh"
+      env:
+        FTP_SERVER: ${{ inputs.server }}
+        FTP_USERNAME: ${{ inputs.username }}
+        FTP_PASSWORD: ${{ inputs.password }}
+        FTP_PORT: ${{ inputs.port }}
+        FTP_PROTOCOL: ${{ inputs.protocol }}
+        FTP_SSL_VERIFY: ${{ inputs.ssl-verify }}
+        LOCAL_DIR: ${{ inputs.local-dir }}
+        REMOTE_DIR: ${{ inputs.remote-dir }}
+        EXCLUDE_LIST: ${{ inputs.exclude }}
+        FULL_DEPLOY: ${{ inputs.full-deploy }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        GIT_BEFORE_SHA: ${{ github.event.before }}
+        GIT_HEAD_SHA: ${{ github.sha }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
