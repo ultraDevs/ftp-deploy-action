@@ -17,6 +17,7 @@ FTP_PROTOCOL="${FTP_PROTOCOL:-ftps}"
 FTP_SSL_VERIFY="${FTP_SSL_VERIFY:-true}"
 FULL_DEPLOY="${FULL_DEPLOY:-false}"
 DRY_RUN="${DRY_RUN:-false}"
+LFTP_DEBUG="${LFTP_DEBUG:-false}"
 
 [[ "$REMOTE_DIR" != */ ]] && REMOTE_DIR="$REMOTE_DIR/"
 
@@ -53,6 +54,9 @@ if ! command -v lftp >/dev/null 2>&1; then
 fi
 
 LFTP_SETTINGS="set xfer:log yes; set net:timeout 15; set net:max-retries 2;"
+if [ "$LFTP_DEBUG" = "true" ]; then
+  LFTP_SETTINGS="debug 3; $LFTP_SETTINGS"
+fi
 if [ "$FTP_PROTOCOL" = "ftps" ]; then
   LFTP_SETTINGS="$LFTP_SETTINGS set ftp:ssl-force true; set ftp:ssl-protect-data true;"
 fi

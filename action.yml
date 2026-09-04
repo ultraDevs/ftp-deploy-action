@@ -49,6 +49,10 @@ inputs:
     description: "'true' to print what would be uploaded/deleted without connecting or transferring anything"
     required: false
     default: 'false'
+  debug:
+    description: "'true' to print the raw lftp/FTP protocol exchange (PASV responses, connection attempts). Credentials are still masked by GitHub's secret redaction. Use this to diagnose transfer failures, then turn it back off."
+    required: false
+    default: 'false'
 
 outputs:
   mode:
@@ -88,6 +92,7 @@ runs:
         EXCLUDE_LIST: ${{ inputs.exclude }}
         FULL_DEPLOY: ${{ inputs.full-deploy }}
         DRY_RUN: ${{ inputs.dry-run }}
+        LFTP_DEBUG: ${{ inputs.debug }}
         GIT_BEFORE_SHA: ${{ github.event.before }}
         GIT_HEAD_SHA: ${{ github.sha }}
         GITHUB_EVENT_NAME: ${{ github.event_name }}
